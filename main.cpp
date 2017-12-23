@@ -23,7 +23,6 @@ void upSample(int factor = 3){
 		}
 	}
 };
-// ^ pyramid of death
 //function that enhances image and puts it into a higher res image
 //TODO: once it is working make it threadsafe
 void enhanceImage(short differenceThreshold = 1){
@@ -101,7 +100,7 @@ void enhanceImage(short differenceThreshold = 1){
 				//if the square is mostly solid color
 				//just fill in the higher res image with solid color
 				if(th1 < differenceThreshold || th2 < differenceThreshold){
-					std::cout << "upsample" << std::endl;
+					//std::cout << "upsample" << std::endl;
 					unsigned char c;
 					for(int y = h; y < h + 3; y++){
 						for(int x = w; x < w + 3; x++){
@@ -116,13 +115,23 @@ void enhanceImage(short differenceThreshold = 1){
 					continue;
 				}
 				//apply new pixels to high res img
-				//*
+				/*
 				std::cout << "applying filter" << std::endl;
-				//std::cout << "th1 " << th1 << std::endl;
-				//std::cout << "th2 " << th2 << std::endl;
+				std::cout << "th1 " << th1 << std::endl;
+				std::cout << "th2 " << th2 << std::endl;
 				//*/
-				//TODO: use the two positions to make a line and connect them
-
+				
+				double slope = ((double)th1y - th2y) / ((double)th1x - th2x);
+				for(int i = 0; i < 9; i++){
+					//don't draw the pixel if the line goes past the borders
+					if(i * slope > 8 || i * slope < 0){
+						break;
+					}
+					//draw a pixel for the dividing line
+					mod(w * 3 + i, h * 3 + i * slope, channel) = 255;
+				}
+				//TODO: using slope fill in two colors on either side of the line
+				//using true values to properly fill it in
 			}
 		}
 	}
@@ -140,6 +149,8 @@ int main(int argc, char const *argv[])
 	//pass enhancement function a threshold of 2
 	enhanceImage(2);
 	//save image
+	std::cout << "Saving Image" << std::endl;
+	//TODO: consider using other format to save image (lossless?)
 	mod.save("mod.jpg");
 	return 0;
 };
