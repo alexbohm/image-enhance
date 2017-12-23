@@ -93,10 +93,7 @@ void enhanceImage(short differenceThreshold = 1){
 					}
 				}
 				//done finding max thresholds
-				/*
-				std::cout << "th1 " << th1 << std::endl;
-				std::cout << "th2 " << th2 << std::endl;
-				//*/
+
 				//if the square is mostly solid color
 				//just fill in the higher res image with solid color
 				if(th1 < differenceThreshold || th2 < differenceThreshold){
@@ -115,13 +112,11 @@ void enhanceImage(short differenceThreshold = 1){
 					continue;
 				}
 				//apply new pixels to high res img
-				/*
-				std::cout << "applying filter" << std::endl;
-				std::cout << "th1 " << th1 << std::endl;
-				std::cout << "th2 " << th2 << std::endl;
-				//*/
-				
+				//TODO: find why this doesn't throw any errors about div by 0
+				//find slope between two colors
 				double slope = ((double)th1y - th2y) / ((double)th1x - th2x);
+
+				/* draw line between max thresholds
 				for(int i = 0; i < 9; i++){
 					//don't draw the pixel if the line goes past the borders
 					if(i * slope > 8 || i * slope < 0){
@@ -130,8 +125,41 @@ void enhanceImage(short differenceThreshold = 1){
 					//draw a pixel for the dividing line
 					mod(w * 3 + i, h * 3 + i * slope, channel) = 255;
 				}
-				//TODO: using slope fill in two colors on either side of the line
-				//using true values to properly fill it in
+				//*/
+				//TODO: fix undefined slope errors
+				//color1 and color2 are the two colors on either side of the line
+				//color above line
+				int color1total = 0;
+				int color1count = 1;
+				//color below line
+				int color2total = 0;
+				int color2count = 1;
+				for(int i = 0; i < 3; i++){
+					for(int j = 0; j < 3; j++){
+						if(j > i * slope){
+							color1total += orig(w + i, h + j, channel);
+							color1count++;
+						} else if(j < i * slope){
+							color2total += orig(w + i, h + j, channel);
+							color2count++;
+						}
+					}
+				}
+				//std::cout << "Here" << std::endl;
+				unsigned char color1 = color1total / color1count;
+				unsigned char color2 = color2total / color2count;
+				//std::cout << "Not Here" << std::endl;
+				//fill in square
+				//color1 is used as the color on the line
+				for(int i = 0; i < 9; i++){
+					for(int j = 0; j < 9; j++){
+						if(j >= i * slope){
+							mod(w * 3 + i, h * 3 + j, channel) = color1;
+						} else if(j < i * slope){
+							mod(w * 3 + i, h * 3 + j, channel) = color2;
+						}
+					}
+				}
 			}
 		}
 	}
