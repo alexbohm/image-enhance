@@ -32,50 +32,74 @@ void enhanceImage(short differenceThreshold = 1){
 		std::cout << "Channel " << channel << std::endl;
 		for(int h = 0; h < orig.height() - 2; h += 3){
 			for(int w = 0; w < orig.width() - 2; w += 3){
-				/*
-					load channel data into array
-				*/
-				// 0 1 2
-				// 7   3
-				// 6 5 4
-				//top 3 pxls
-				data[0] = orig(w, h, channel);
-				data[1] = orig(w + 1, h, channel);
-				data[2] = orig(w + 2, h, channel);
-				//right center
-				data[3] = orig(w + 2, h + 1, channel);
-				//bottom 3 pxls
-				data[4] = orig(w + 2, h + 2, channel);
-				data[5] = orig(w + 1, h + 2, channel);
-				data[6] = orig(w, h + 2, channel);
-				//left center
-				data[7] = orig(w, h + 1, channel);
-				/*
-					enhance channel
-				*/
-				int th = 0;
+				//temp threshold
+				int th;
+				//maximum thresholds
 				int th1 = 0;
-				int th1_pos = 0;
 				int th2 = -1;
-				int th2_pos = 1;
-				th = std::abs((int)data[7] - (int)data[0]);
-				if(th > th1){
-					th1 = th;
-					th1_pos = 0;
-				}
-				for(int i = 1; i < 8; i++){
-					th = std::abs((int)data[i] - (int)data[i-1]);
+				//maximum threshold positions
+				int th1x = 0, th1y = 0;
+				int th2x = 0, th2y = 0;
+				//find max threshold in outer ring of pixels
+				//top right two
+				for(int i = w + 1; i <  w + 3; i++){
+					th = std::abs((int)orig(i, h, channel) - (int)orig(i - 1, h, channel));
 					if(th > th1){
 						th1 = th;
-						th1_pos = i;
-					}
-					if(th > th2 && th < th1){
+						th1x = i;
+						th1y = h;
+					}else if(th > th2 && th < th1){
 						th2 = th;
-						th2_pos = i;
+						th2x = i;
+						th2y = h;
 					}
 				}
+				//bottom right two
+				for(int i = h + 1; i < h + 3; i++){
+					th = std::abs((int)orig(w + 2, i, channel) - (int)orig(w + 2, i - 1, channel));
+					if(th > th1){
+						th1 = th;
+						th1x = w + 2;
+						th1y = i;
+					}else if(th > th2 && th < th1){
+						th2 = th;
+						th2x = w + w;
+						th2y = i;
+					}
+				}
+				//bottom left two
+				for(int i = w; i < w + 2; i++){
+					th = std::abs((int)orig(i, h + 2, channel) - (int)orig(i + 1, h + 2, channel));
+					if(th > th1){
+						th1 = th;
+						th1x = i;
+						th1y = h + 2;
+					}else if(th > th2 && th < th1){
+						th2 = th;
+						th2x = i;
+						th2y = h + 2;
+					}
+				}
+				//top left two
+				for(int i = h; i < h + 2; i++){
+					th = std::abs((int)orig(w, i, channel) - (int)orig(w, i + 1, channel));
+					if(th > th1){
+						th1 = th;
+						th1x = w;
+						th1y = i;
+					}else if(th > th2 && th < th1){
+						th2 = th;
+						th2x = w;
+						th2y = i;
+					}
+				}
+				//done finding max thresholds
+				/*
+				std::cout << "th1 " << th1 << std::endl;
+				std::cout << "th2 " << th2 << std::endl;
+				//*/
 				//if the square is mostly solid color
-				//just fill in the higher res image
+				//just fill in the higher res image with solid color
 				if(th1 < differenceThreshold || th2 < differenceThreshold){
 					std::cout << "upsample" << std::endl;
 					unsigned char c;
@@ -94,11 +118,11 @@ void enhanceImage(short differenceThreshold = 1){
 				//apply new pixels to high res img
 				//*
 				std::cout << "applying filter" << std::endl;
-				//std::cout << "th1 " << th1 << " @ " << th1_pos << std::endl;
-				//std::cout << "th2 " << th2 << " @ " << th2_pos << std::endl;
+				//std::cout << "th1 " << th1 << std::endl;
+				//std::cout << "th2 " << th2 << std::endl;
 				//*/
-
 				//TODO: use the two positions to make a line and connect them
+
 			}
 		}
 	}
@@ -116,6 +140,6 @@ int main(int argc, char const *argv[])
 	//pass enhancement function a threshold of 2
 	enhanceImage(2);
 	//save image
-	mod.save("mod.png");
+	mod.save("mod.jpg");
 	return 0;
-}
+};
