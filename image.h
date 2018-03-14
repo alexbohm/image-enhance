@@ -77,6 +77,7 @@ public:
 		return v[y][x][layer][channel];
 	};
 	void save(std::string filename){
+		std::cout << "Writing to " + filename << std::endl;
 		#ifdef __linux__
 			CImg<unsigned char> out(width, height, 1, channels, 0); //(width, height, depth, channels, default color)
 		#elif __APPLE__
@@ -142,6 +143,7 @@ public:
 	int width, height, channels;
 	unsigned char *** data;
 	InImage(std::string filename){
+		std::cout << "Reading " + filename << std::endl;
 	#ifdef __linux__
 		CImg<unsigned char> img(filename.c_str());
 		width = img.width();
@@ -167,7 +169,7 @@ public:
 				}
 			}
 		}
-		std::cout << "Read in " << filename << std::endl;
+		std::cout << "Read in " + filename << std::endl;
 	};
 	~InImage(){
 		for(int i = 0; i < height; i++){

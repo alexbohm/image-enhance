@@ -35,10 +35,11 @@ public:
 		//set the threshold
 		uThres = threshold;
 		//init the OutImage
-		out = new OutImage(in->width * sSize, in->height * sSize, in->channels, 1);
+		std::cout << "Creating Output Image" << std::endl;
+		out = new OutImage(in->width * sSize, in->height * sSize, in->channels, 4);
 		//start the enhancement
-		for(int xoff = 0; xoff < 3; xoff+=3){
-			for(int yoff = 0; yoff < 3; yoff+=3){
+		for(int xoff = 0; xoff < 3; xoff+=2){
+			for(int yoff = 0; yoff < 3; yoff+=2){
 				std::cout << "Processing Layer " << cLayer << std::endl;
 				std::thread t[in->channels];
 				for(int c = 0; c < in->channels; c++){
@@ -52,10 +53,12 @@ public:
 		}
 		std::cout << "Finished Processing" << std::endl;
 	};
-public: //switch to private after testing
+private:
 	//the current layer on the output image to write data to
 	int cLayer;
+	//scale factor
 	int sSize;
+	//upscale square if the max threshold is less then uThres
 	int uThres;
 	void processChannel(int x, int y, int c){
 		for (int i = x; i < in->width - 2; i+=3){
@@ -142,7 +145,7 @@ public: //switch to private after testing
 		}
 		//std::cout << "Threshold 1 " << th1 << " at (" << th1x << "," << th1y << ")" << std::endl;
 		//std::cout << "Threshold 2 " << th2 << " at (" << th2x << "," << th2y << ")" << std::endl;
-		//test if threshold is greater than passed value
+		//test if we should upscale
 		if(th1 < uThres || th2 < uThres){
 			//upsample pixel
 			upSample(x, y, c);
@@ -156,12 +159,13 @@ public: //switch to private after testing
 			int color1 = 0, color1count = 0;
 			int color2 = 0, color2count = 0;
 			for(int i = 0; i < 3; i++){
-				if(i > th1x){
+				if(i >= th1x){
 					for(int j = 0; j < 3; j++){
 						color2 += in->at(x + i, y + j, c);
 						color2count++;
 					}
-				} else {
+				} 
+				if(i <= th1x){
 					for(int j = 0; j < 3; j++){
 						color1 += in->at(x + i, y + j, c);
 						color1count++;
@@ -189,30 +193,39 @@ public: //switch to private after testing
 		}
 		//use point slope form of equation to draw line on output
 		//y-y1 = m(x-x1)
-		int m = (th2y - th1y) / (th2x - th1x);
+		float m = (th2y - th1y) / (th2x - th1x);
 
 		int color1 = 0, color1count = 0; //TODO: find why both colors don't always get set
-		int color2 = 0, color2count = 0;
-		for(int i = 0; i < 3; i++){
-			for(int j = 0; j < 3; j++){
-				if(j > m * (i - th1x) + th1y){
-					color2 += in->at(x + i, y + j, c);
+		int color2 = 0, color2count = 0; // seems to be when slope is negative color2 doesn't get set
+		float lineY;
+		for(int i = 0; i < 3 * sSize; i++){
+			lineY = m * (float)(i - th1x * sSize) + th1y * sSize;
+			for(int j = 0; j < 3 * sSize; j++){
+				if((float)j >= lineY){
+					color2 += in->at(x + i / sSize, y + j / sSize, c);
 					color2count++;
-				} else {
-					color1 += in->at(x + i, y + j, c);
+				} 
+				if((float)j <= lineY){
+					color1 += in->at(x + i / sSize, y + j / sSize, c);
 					color1count++;
 				}
 			}
 		}
 		if(color1count != 0){
 			color1 /= color1count;
-		}
+		}// else {
+		//	std::cout << "1>" + std::to_string(m) + " (" + std::to_string(th1x) + "," + std::to_string(th1y) + ") (" + std::to_string(th2x) + "," + std::to_string(th2y) + ")\n";
+		//}
 		if(color2count != 0){
 			color2 /= color2count;
-		}
+		}// else {
+		//	std::cout << "2>" + std::to_string(m) + " (" + std::to_string(th1x) + "," + std::to_string(th1y) + ") (" + std::to_string(th2x) + "," + std::to_string(th2y) + ")\n";
+		//}
+
 		for(int i = 0; i < 3 * sSize; i++){
+			lineY = m * (float)(i - th1x) + th1y * sSize;
 			for(int j = 0; j < 3 * sSize; j++){
-				if(j > m * (i - th1x) + th1y){ //TODO: decide whether to make this > or >=
+				if((float)j >= lineY){
 					out->at(x * sSize + i, y * sSize + j, c, cLayer) = color2;
 				} else {
 					out->at(x * sSize + i, y * sSize + j, c, cLayer) = color1;
